@@ -2,25 +2,29 @@
 #include<cstdint>
 #include<vector>
 #include<algorithm>
-//#define DEBUG
 
 using namespace std;
+
+const int max_cidr_subrange = 10;
 
 struct cidr{
 	uint32_t value;
 	uint32_t mask;
+
+	static uint32_t get_mask(int l);
+	static int get_mask_l(uint32_t mask);
+
 	void read(FILE* f);
 	void print(FILE* f);
 	void reduce(uint32_t new_mask);
-	static uint32_t get_mask(int l);
-	static int get_mask_l(uint32_t mask);
+	int ip_count()const;
+
 	bool operator==(const cidr& another)const{
 		return value == another.value && mask == another.mask;
 	}
 	bool operator<(const cidr& another)const{
 		return value < another.value;
 	}
-	int ip_count()const;
 };
 
 int cidr::ip_count()const{
@@ -47,10 +51,6 @@ void cidr::read(FILE* f){
 	fscanf(f, "%d.%d.%d.%d/%d\n", &a, &b, &c, &d, &l);
 	value = (a<<24) | (b<<16) | (c<<8) | d;
 	mask = get_mask(l);
-#ifdef DEBUG
-	printf("CIDR: %d.%d.%d.%d/%d\n", a, b, c, d, l);
-	printf("CIDRV: 0x%08x 0x%08x\n", value, mask);
-#endif
 }
 
 void cidr::print(FILE* f){
@@ -69,7 +69,7 @@ void cidr::reduce(uint32_t new_mask){
 }
 
 cidr merge(cidr a, cidr b){
-	for(int ml = min(cidr::get_mask_l(a.mask), cidr::get_mask_l(b.mask)); ml >= 10; ml--){
+	for(int ml = min(cidr::get_mask_l(a.mask), cidr::get_mask_l(b.mask)); ml >= max_cidr_subrange; ml--){
 		auto mask = cidr::get_mask(ml);
 		a.reduce(mask); b.reduce(mask);
 		if(a == b)
@@ -83,14 +83,14 @@ vector<cidr> merge_cidrs(vector<cidr> s){
 	bool merged = false;
 	int i;
 	vector<cidr> result;
-	for(i = 1; i < s.size(); i++){
+	for(i = 1; i < (int)s.size(); i++){
 		if(merge(s[i-1], s[i]).value){
 			result.push_back(merge(s[i-1], s[i]));
 			i++;
 			merged = true;
 		}else{
 			result.push_back(s[i-1]);
-			if(i == s.size()-1)
+			if(i == (int)s.size()-1)
 				result.push_back(s[i]);
 		}
 	}
@@ -106,7 +106,6 @@ vector<cidr> read_cidrs(FILE* f){
 	}
 	return result;
 }
-
 
 int main(){
 	auto s = read_cidrs(stdin);
