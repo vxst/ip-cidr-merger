@@ -5,7 +5,7 @@
 
 using namespace std;
 
-const int max_cidr_subrange = 10;
+const int max_cidr_subrange = 6;
 
 struct cidr{
 	uint32_t value;
@@ -88,6 +88,8 @@ vector<cidr> merge_cidrs(vector<cidr> s){
 			result.push_back(merge(s[i-1], s[i]));
 			i++;
 			merged = true;
+			if(i == (int)s.size()-1)
+				result.push_back(s[i]);
 		}else{
 			result.push_back(s[i-1]);
 			if(i == (int)s.size()-1)
